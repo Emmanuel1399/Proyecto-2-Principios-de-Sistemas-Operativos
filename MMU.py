@@ -1,4 +1,5 @@
-from Page import Page
+from Page import *
+from Pointer import *
 class MMU:
 
     def __init__(self,algorithm):
@@ -30,10 +31,11 @@ class MMU:
                     self.ram_used += self.page_size
 
     def fifo(self,pid,new_pages):
+        new_ptr = Pointer(pid,)
         for i in range(new_pages):
             if len(self.ram_memory) < self.total_pages:
                 page_number = len(self.ram_memory)
-                new_page = Page(pid, page_number, in_ram=True)
+                new_page = Page()
                 if i == num_pages - 1:  # Last page
                     new_page.waste = last_page_waste
                 self.ram_memory.append(new_page)
