@@ -52,6 +52,7 @@ class MMU:
             else:
                 # Handle page fault if needed
                 self.fifo_page_fault(ptr)
+            self.ram_memory.append(ptr)
 
     def fifo_page_fault(self,pointer):
         new_page = len(self.virtual_memory)
@@ -63,7 +64,53 @@ class MMU:
 
     def use(self, pid):
         if pid in self.map_memory:
-            for page in self.map_memory[pid]:
-                if not page.in_ram:
-                    # Manejar fallo de página si la página está en memoria virtual
-                    self.fifo_page_fault(page)
+            pointer = self.map_memory[pid]  # Obtener el puntero para el PID dado
+            for page in pointer.page_list:  # Revisar cada página en el puntero
+                if page.in_virtual_memory:  # Si la página está en memoria virtual
+                    self.handle_page_fault(page)  # Manejar el fallo de página
+
+    def delete(self, ptr):
+        if ptr in self.map_memory:
+            pointer = self.map_memory[ptr]
+            waste_removed = pointer.delete()  # Llamada al método delete del objeto Pointer
+            self.waste -= waste_removed  # Actualizar el conteo de residuos en MMU
+
+            # Remover páginas de la memoria RAM y memoria virtual
+            for page in pointer.page_list:
+                if page.in_virtual_memory:
+                    self.virtual_memory.remove(page)
+                else:
+                    self.ram_memory.remove(page)
+
+            del self.map_memory[ptr]  # Eliminar el puntero del mapa de memoria
+
+    def kill(self, pid):
+        # Verificar si el pid existe en el mapa de memoria
+        for ptr in self.map_memory:
+            if ptr.pid == pid:
+                pointer = ptr  # Obtener el puntero asociado al pid
+                # Eliminar todas las páginas asociadas al puntero tanto en RAM como en memoria virtual
+                for page in pointer.page_list:
+                    if page.in_virtual_memory:
+                        # Si la página está en la memoria virtual, removerla
+                        self.virtual_memory.remove(page)
+                    else:
+                        # Si la página está en RAM, también removerla
+                        self.ram_memory.remove(page)
+                    self.waste -= page.waste  # Restar el desperdicio asociado a cada página
+
+                # Llamar al método Kill del objeto Pointer, que limpia la lista de páginas y marca el puntero como eliminado
+                pointer.Kill()
+                # Finalmente, remover el puntero del mapa de memoria
+            del self.map_memory[ptr]
+
+    def handle_page_fault(self, page):
+        # Asumiendo que la página necesita ser traída de memoria virtual a RAM:
+        if page in self.virtual_memory:
+            self.virtual_memory.remove(page)
+        if len(self.ram_memory) >= self.total_pages:
+            evicted_page = self.ram_memory.pop(0)  # Aplicar FIFO
+            evicted_page.in_virtual_memory = True
+            self.virtual_memory.append(evicted_page)
+        page.in_virtual_memory = False
+        self.ram_memory.append(page)
