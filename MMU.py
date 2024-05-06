@@ -5,7 +5,6 @@ from Pointer import *
 class MMU:
 
     def __init__(self, algorithm):
-        self.time_process = 0
         self.ram_memory = []
         self.virtual_memory = []
         self.map_memory = []
@@ -15,22 +14,18 @@ class MMU:
         self.ram_used = 0
         self.virtual_used = 0
         self.algorithm = algorithm
+        self.time_process = 0
 
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
         new_ptr = Pointer(pid, size)
-
-        match self.algorithm:
-            case "FIFO":
-                self.fifo(num_pages, new_ptr)
-            case "SC":
-                None
-            case "MRU":
-                None
-            case "RND":
-                None
-            case "OPT":
-                None
+        self.map_memory[pid] = new_ptr
+        if self.algorithm == "FIFO":
+            self.fifo(num_pages, new_ptr)
+        elif self.algorithm == "SC":
+            self.second_chance(num_pages, new_ptr)
+        elif self.algorithm == "MRU":
+            self.mru(num_pages, new_ptr)
 
     def calc_ram_used(self):
         for i in range(len(self.map_memory)):
@@ -55,10 +50,10 @@ class MMU:
                 new_page = Page(page_number, page_waste)
                 self.ram_memory.append(new_page)
                 ptr.page_list.append(new_page)
-                self.time_process +=1
+                self.time_process += 1
             else:
                 # Handle page fault if needed
-                self.fifo_page_fault(ptr,page_waste)
+                self.fifo_page_fault(ptr, page_waste)
         self.map_memory.append(ptr)
 
     def handle_page_fault(self, page):
@@ -83,7 +78,7 @@ class MMU:
 
     def use(self, ptr):
         if ptr in self.map_memory:
-            pointer = self.map_memory[ptr] # Obtener el puntero para el PID dado
+            pointer = self.map_memory[ptr]  # Obtener el puntero para el PID dado
             if pointer.kill:
                 print("PTR already killed")
                 return
@@ -121,6 +116,65 @@ class MMU:
                         self.ram_memory.remove(page)
                     self.waste -= page.waste  # Restar el desperdicio asociado a cada página
 
-                # Llamar al método Kill del objeto Pointer, que limpia la lista de páginas y marca el puntero como eliminado
+                # Llamar al método Kill del objeto Pointer
+
                 pointer.Kill()
-                #Error al hacer los kills, tengo que arreglar esta parte
+                # Error al hacer los kills, tengo que arreglar esta parte
+
+    def mru(self, new_pages, ptr):
+        for i in range(new_pages):
+            page_waste = 0
+            if i == new_pages - 1:
+                page_size = ptr.size % self.page_size
+                page_waste = self.page_size - page_size if page_size != 0 else 0
+                self.waste += page_waste
+
+            if len(self.ram_memory) < self.total_pages:
+                page_number = len(self.ram_memory)
+                new_page = Page(page_number, page_waste)
+                new_page.last_used = self.time_process
+                self.ram_memory.append(new_page)
+                ptr.page_list.append(new_page)
+                self.time_process += 1
+            else:
+                self.mru_page_fault(ptr)
+                self.map_memory.append(ptr)
+
+    def mru_page_fault(self, ptr):
+        most_recently_used_page = max(self.ram_memory, key=lambda x: x.last_used)
+        self.ram_memory.remove(most_recently_used_page)
+        most_recently_used_page.in_virtual_memory = True
+        self.virtual_memory.append(most_recently_used_page)
+
+        page_waste = ptr.page_list[-1].waste if ptr.page_list else 0
+        new_page = Page(len(self.virtual_memory), page_waste)
+        new_page.last_used = self.time_process
+        self.ram_memory.append(new_page)
+        ptr.page_list.append(new_page)
+        self.time_process += 5
+
+    # Parte Second Cange
+
+    def second_chance(self, new_pages, ptr):
+        for _ in range(new_pages):
+            if len(self.ram_memory) < self.total_pages:
+                new_page = Page(len(self.ram_memory), 0)
+                new_page.time_in_ram += 1
+                self.ram_memory.append(new_page)
+                ptr.page_list.append(new_page)
+            else:
+                self.handle_second_chance()
+
+    def handle_second_chance(self):
+        i = 0
+        while True:
+            page = self.ram_memory[i]
+            if page.second_chance:
+                page.second_chance = False
+                self.ram_memory.append(self.ram_memory.pop(i))
+            else:
+                self.ram_memory.pop(i)
+                page.in_virtual_memory = True
+                page.time_in_virtual_memory += 5
+                self.virtual_memory.append(page)
+                break

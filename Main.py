@@ -64,15 +64,9 @@ P = 40  # Número de procesos
 N = 1000  # Número de operaciones
 operations = generate_operations(P, N)
 
-
 with open('operations.json', 'w') as f:
     json.dump(operations, f)
-
 simulate_mmu(operations)
 
 opt_mmu = MMU("FIFO")
 general_mmu = MMU("OPT")
-
-
-
-
