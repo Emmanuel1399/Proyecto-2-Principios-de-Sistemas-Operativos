@@ -60,8 +60,8 @@ def simulate_mmu(operations):
             mmu.kill(pid)
 
 
-P = 10  # Número de procesos
-N = 500  # Número de operaciones
+P = 40  # Número de procesos
+N = 1000  # Número de operaciones
 operations = generate_operations(P, N)
 
 
