@@ -9,5 +9,10 @@ class Pointer:
         waste = 0
         for page in self.page_list:
             waste += page.waste
+            page.waste = 0
         self.page_list = []
+        return waste
+    def Kill(self):
+        waste = self.delete()
+        self.kill = True
         return waste
