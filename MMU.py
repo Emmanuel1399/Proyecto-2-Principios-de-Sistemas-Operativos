@@ -80,7 +80,10 @@ class MMU:
 
     def use(self, ptr):
         if ptr in self.map_memory:
-            pointer = self.map_memory[ptr]  # Obtener el puntero para el PID dado
+            pointer = self.map_memory[ptr] # Obtener el puntero para el PID dado
+            if pointer.kill:
+                print("PTR already killed")
+                return
             for page in pointer.page_list:  # Revisar cada página en el puntero
                 if page.in_virtual_memory:  # Si la página está en memoria virtual
                     self.handle_page_fault(page)  # Manejar el fallo de página
@@ -117,5 +120,4 @@ class MMU:
 
                 # Llamar al método Kill del objeto Pointer, que limpia la lista de páginas y marca el puntero como eliminado
                 pointer.Kill()
-                # Finalmente, remover el puntero del mapa de memoria
-            del self.map_memory[ptr]#Error al hacer los kills, tengo que arreglar esta parte
+                #Error al hacer los kills, tengo que arreglar esta parte
