@@ -27,7 +27,8 @@ class MMU:
                 None
             case "RND":
                 None
-
+            case "OPT":
+                None
     def calc_ram_used(self):
         for i in range(len(self.map_memory)):
             ptr_list = self.map_memory[i].page_list
