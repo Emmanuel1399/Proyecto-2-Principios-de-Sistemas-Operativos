@@ -16,9 +16,7 @@ class MMU:
 
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
-        last_page_size = size % self.page_size
-        last_page_waste = self.page_size - last_page_size if last_page_size != 0 else 0
-        self.waste += last_page_waste
+
         new_ptr = Pointer(pid, size)
         match self.algorithm:
             case "FIFO":
@@ -44,19 +42,20 @@ class MMU:
         for i in range(new_pages):
             if len(self.ram_memory) < self.total_pages:
                 page_number = len(self.ram_memory)
-                new_page = Page(page_number)
+                page_size = ptr.size % self.page_size
+                page_waste = self.page_size - page_size if page_size != 0 else 0
+                self.waste += page_waste
+                new_page = Page(page_number,page_waste)
                 self.ram_memory.append(new_page)
                 ptr.page_list.append(new_page)
             else:
                 # Handle page fault if needed
                 self.fifo_page_fault(ptr)
 
-
     def fifo_page_fault(self,pointer):
         new_page = len(self.virtual_memory)
         evicted_page = self.ram_memory.pop(0)  # FIFO
         evicted_page.in_ram = False
         self.virtual_memory.append(evicted_page)
-        self.total_waste -= evicted_page.waste  # Hay que ver como se hace el manejo del desperdicio
         self.ram_memory.append(new_page)
         pointer.append(new_page)
