@@ -6,4 +6,4 @@ class Page:
         self.in_virtual_memory = False
         self.second_change = True # mantener la segunda vida activa en principio
         self.last_used = 0  # Para el MRU
-        self.time_in_ram=0
+        self.time_in_ram = 0

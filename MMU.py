@@ -19,7 +19,7 @@ class MMU:
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
         new_ptr = Pointer(pid, size)
-        self.map_memory[pid] = new_ptr
+        self.map_memory.append(new_ptr)
         if self.algorithm == "FIFO":
             self.fifo(num_pages, new_ptr)
         elif self.algorithm == "SC":
