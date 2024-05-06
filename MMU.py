@@ -169,7 +169,7 @@ class MMU:
         i = 0
         while True:
             page = self.ram_memory[i]
-            if page.second_chance:
+            if not page.second_chance:
                 page.second_chance = False
                 self.ram_memory.append(self.ram_memory.pop(i))
             else:
