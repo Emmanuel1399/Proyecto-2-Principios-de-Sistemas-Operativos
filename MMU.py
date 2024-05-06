@@ -118,4 +118,4 @@ class MMU:
                 # Llamar al método Kill del objeto Pointer, que limpia la lista de páginas y marca el puntero como eliminado
                 pointer.Kill()
                 # Finalmente, remover el puntero del mapa de memoria
-            del self.map_memory[ptr]
+            del self.map_memory[ptr]#Error al hacer los kills, tengo que arreglar esta parte
