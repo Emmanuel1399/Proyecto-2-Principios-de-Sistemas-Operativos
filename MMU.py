@@ -41,10 +41,7 @@ class MMU:
                     self.ram_used += self.page_size
 
     def fifo(self,new_pages,ptr):
-
         for i in range(new_pages):
-
-
             if len(self.ram_memory) < self.total_pages:
                 page_number = len(self.ram_memory)
                 new_page = Page(page_number)
@@ -60,6 +57,6 @@ class MMU:
         evicted_page = self.ram_memory.pop(0)  # FIFO
         evicted_page.in_ram = False
         self.virtual_memory.append(evicted_page)
-        self.total_waste -= evicted_page.waste  # Adjust waste when page is evicted
+        self.total_waste -= evicted_page.waste  # Hay que ver como se hace el manejo del desperdicio
         self.ram_memory.append(new_page)
         pointer.append(new_page)
