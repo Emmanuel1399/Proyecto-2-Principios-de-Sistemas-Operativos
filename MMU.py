@@ -1,8 +1,10 @@
 from Page import *
 from Pointer import *
+
+
 class MMU:
 
-    def __init__(self,algorithm):
+    def __init__(self, algorithm):
         self.ram_memory = []
         self.virtual_memory = []
         self.map_memory = []
@@ -13,14 +15,13 @@ class MMU:
         self.virtual_used = 0
         self.algorithm = algorithm
 
-
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
-
         new_ptr = Pointer(pid, size)
+
         match self.algorithm:
             case "FIFO":
-                self.fifo(num_pages,new_ptr)
+                self.fifo(num_pages, new_ptr)
             case "SC":
                 None
             case "MRU":
@@ -29,6 +30,7 @@ class MMU:
                 None
             case "OPT":
                 None
+
     def calc_ram_used(self):
         for i in range(len(self.map_memory)):
             ptr_list = self.map_memory[i].page_list
@@ -39,32 +41,46 @@ class MMU:
                 else:
                     self.ram_used += self.page_size
 
-    def fifo(self,new_pages,ptr):
+    def fifo(self, new_pages, ptr):
         for i in range(new_pages):
-            if len(self.ram_memory) < self.total_pages:
-                page_number = len(self.ram_memory)
+            page_waste = 0
+            if i == new_pages - 1:
                 page_size = ptr.size % self.page_size
                 page_waste = self.page_size - page_size if page_size != 0 else 0
                 self.waste += page_waste
-                new_page = Page(page_number,page_waste)
+
+            if len(self.ram_memory) < self.total_pages:
+                page_number = len(self.ram_memory)
+
+                new_page = Page(page_number, page_waste)
                 self.ram_memory.append(new_page)
                 ptr.page_list.append(new_page)
             else:
                 # Handle page fault if needed
-                self.fifo_page_fault(ptr)
-            self.ram_memory.append(ptr)
+                self.fifo_page_fault(ptr,page_waste)
+        self.map_memory.append(ptr)
 
-    def fifo_page_fault(self,pointer):
-        new_page = len(self.virtual_memory)
+    def handle_page_fault(self, page):
+        # Asumiendo que la página necesita ser traída de memoria virtual a RAM:
+        self.virtual_memory.remove(page)
+        evicted_page = self.ram_memory.pop(0)  # Aplicar FIFO
+        evicted_page.in_virtual_memory = True
+        self.virtual_memory.append(evicted_page)
+        page.in_virtual_memory = False
+        self.ram_memory.append(page)
+
+    def fifo_page_fault(self, pointer, waste):
+        num_page = len(self.virtual_memory)
+        new_page = Page(num_page, waste)
         evicted_page = self.ram_memory.pop(0)  # FIFO
-        evicted_page.in_ram = False
+        evicted_page.in_virtual_memory = True
         self.virtual_memory.append(evicted_page)
         self.ram_memory.append(new_page)
-        pointer.append(new_page)
+        pointer.page_list.append(new_page)
 
-    def use(self, pid):
-        if pid in self.map_memory:
-            pointer = self.map_memory[pid]  # Obtener el puntero para el PID dado
+    def use(self, ptr):
+        if ptr in self.map_memory:
+            pointer = self.map_memory[ptr]  # Obtener el puntero para el PID dado
             for page in pointer.page_list:  # Revisar cada página en el puntero
                 if page.in_virtual_memory:  # Si la página está en memoria virtual
                     self.handle_page_fault(page)  # Manejar el fallo de página
@@ -103,14 +119,3 @@ class MMU:
                 pointer.Kill()
                 # Finalmente, remover el puntero del mapa de memoria
             del self.map_memory[ptr]
-
-    def handle_page_fault(self, page):
-        # Asumiendo que la página necesita ser traída de memoria virtual a RAM:
-        if page in self.virtual_memory:
-            self.virtual_memory.remove(page)
-        if len(self.ram_memory) >= self.total_pages:
-            evicted_page = self.ram_memory.pop(0)  # Aplicar FIFO
-            evicted_page.in_virtual_memory = True
-            self.virtual_memory.append(evicted_page)
-        page.in_virtual_memory = False
-        self.ram_memory.append(page)
