@@ -44,8 +44,8 @@ def generate_operations(P, N):
     return operations_list
 
 
-def simulate_mmu(operations_list):
-    mmu = MMU("SC")
+def simulate_mmu(operations_list, type_algorithm):
+    mmu = MMU(type_algorithm)
     for op in operations_list:
 
         if op[0] == 'new':
@@ -68,6 +68,6 @@ operations = generate_operations(P, N)
 with open('operations.json', 'w') as f:
     json.dump(operations, f)
 
-simulate_mmu(operations)
+simulate_mmu(operations,"MRU")
 
 
