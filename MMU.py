@@ -60,3 +60,10 @@ class MMU:
         self.virtual_memory.append(evicted_page)
         self.ram_memory.append(new_page)
         pointer.append(new_page)
+
+    def use(self, pid):
+        if pid in self.map_memory:
+            for page in self.map_memory[pid]:
+                if not page.in_ram:
+                    # Manejar fallo de página si la página está en memoria virtual
+                    self.fifo_page_fault(page)
