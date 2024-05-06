@@ -5,6 +5,7 @@ from Pointer import *
 class MMU:
 
     def __init__(self, algorithm):
+        self.time_process = 0
         self.ram_memory = []
         self.virtual_memory = []
         self.map_memory = []
@@ -51,10 +52,10 @@ class MMU:
 
             if len(self.ram_memory) < self.total_pages:
                 page_number = len(self.ram_memory)
-
                 new_page = Page(page_number, page_waste)
                 self.ram_memory.append(new_page)
                 ptr.page_list.append(new_page)
+                self.time_process +=1
             else:
                 # Handle page fault if needed
                 self.fifo_page_fault(ptr,page_waste)
@@ -68,6 +69,7 @@ class MMU:
         self.virtual_memory.append(evicted_page)
         page.in_virtual_memory = False
         self.ram_memory.append(page)
+        self.time_process += 5
 
     def fifo_page_fault(self, pointer, waste):
         num_page = len(self.virtual_memory)
@@ -77,6 +79,7 @@ class MMU:
         self.virtual_memory.append(evicted_page)
         self.ram_memory.append(new_page)
         pointer.page_list.append(new_page)
+        self.time_process += 5
 
     def use(self, ptr):
         if ptr in self.map_memory:

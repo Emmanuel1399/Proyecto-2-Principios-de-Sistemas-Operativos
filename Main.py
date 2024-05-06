@@ -12,7 +12,7 @@ def generate_operations(P, N):
         pid = random.randint(1, P)
 
         if op_type == 'new' and (pid not in operations_count or operations_count[pid]['kills'] == 0):
-            size = random.randint(1, 40)
+            size = random.randint(1, 400)
             ptr_id = len(operations) + 1
             operations.append(('new', pid, size))
             active_pointers[ptr_id] = {'pid': pid, 'alive': True}

@@ -5,3 +5,4 @@ class Page:
         self.waste = waste
         self.in_virtual_memory = False
 
+
