@@ -13,12 +13,21 @@ class MMU:
         self.virtual_used = 0
         self.algorithm = algorithm
 
+
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
         last_page_size = size % self.page_size
         last_page_waste = self.page_size - last_page_size if last_page_size != 0 else 0
         self.waste += last_page_waste
-
+        match self.algorithm:
+            case "FIFO":
+                fifo(pid,num_pages)
+            case "SC":
+                None
+            case "MRU":
+                None
+            case "RND":
+                None
 
     def cal_ram_used(self):
         for i in range(len(self.map_memory)):
@@ -35,7 +44,7 @@ class MMU:
         for i in range(new_pages):
             if len(self.ram_memory) < self.total_pages:
                 page_number = len(self.ram_memory)
-                new_page = Page()
+                new_page = Page(page_number)
                 if i == num_pages - 1:  # Last page
                     new_page.waste = last_page_waste
                 self.ram_memory.append(new_page)
