@@ -1,7 +1,5 @@
 from Page import *
 from Pointer import *
-
-
 class MMU:
 
     def __init__(self, algorithm):
@@ -167,14 +165,12 @@ class MMU:
 
     def handle_second_chance(self):
         i = 0
-        while True:
-            page = self.ram_memory[i]
-            if not page.second_chance:
-                page.second_chance = False
-                self.ram_memory.append(self.ram_memory.pop(i))
-            else:
-                self.ram_memory.pop(i)
-                page.in_virtual_memory = True
-                page.time_in_virtual_memory += 5
-                self.virtual_memory.append(page)
-                break
+        page = self.ram_memory[i]
+        if not page.second_chance:
+            page.second_chance = False
+            self.ram_memory.append(self.ram_memory.pop(i))
+        else:
+            self.ram_memory.pop(i)
+            page.in_virtual_memory = True
+            page.time_in_virtual_memory += 5
+            self.virtual_memory.append(page)
