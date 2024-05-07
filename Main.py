@@ -118,4 +118,4 @@ mmu.set_future_references(future_refs)
 
 save_operations_to_file(operations)
 simulate_mmu(operations, "OPT")
-simulate_mmu(operations, "SC")
+simulate_mmu(operations, "RND")
