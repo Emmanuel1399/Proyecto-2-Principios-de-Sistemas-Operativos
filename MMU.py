@@ -26,6 +26,8 @@ class MMU:
             self.second_chance(num_pages, new_ptr)
         elif self.algorithm == "MRU":
             self.mru(num_pages, new_ptr)
+        elif self.algorithm == "RND":
+            self.rnd(num_pages, new_ptr)
 
     def calc_ram_used(self):
         for i in range(len(self.map_memory)):
