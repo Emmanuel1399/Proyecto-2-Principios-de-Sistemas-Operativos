@@ -1,3 +1,5 @@
+import random
+
 from Page import *
 from Pointer import *
 class MMU:
@@ -174,3 +176,33 @@ class MMU:
             page.in_virtual_memory = True
             page.time_in_virtual_memory += 5
             self.virtual_memory.append(page)
+
+    def rnd(self, new_pages, ptr):
+        for i in range(new_pages):
+            page_waste = 0
+            if i == new_pages - 1:
+                page_size = ptr.size % self.page_size
+                page_waste = self.page_size - page_size if page_size != 0 else 0
+                self.waste += page_waste
+            if len(self.ram_memory) < self.total_pages:
+                page_number = len(self.ram_memory)
+                new_page = Page(page_number, page_waste)
+                self.ram_memory.append(new_page)
+                ptr.page_list.append(new_page)
+                self.time_process += 1
+
+        else:
+            self.rnd_page_fault(ptr)
+            self.map_memory.append(ptr)
+
+
+    def rnd_page_fault(self, ptr):
+        evicted_page = random.choice(self.ram_memory)
+        self.ram_memory.remove(evicted_page)
+        evicted_page.in_virtual_memory = True
+        self.virtual_memory.append(evicted_page)
+        page_waste = ptr.page_list[-1].waste if ptr.page_list else 0
+        new_page = Page(len(self.virtual_memory), page_waste)
+        self.ram_memory.append(new_page)
+        ptr.page_list.append(new_page)
+        self.time_process += 5

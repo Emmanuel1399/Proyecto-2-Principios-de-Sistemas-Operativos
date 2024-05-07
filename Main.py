@@ -68,6 +68,6 @@ operations = generate_operations(P, N)
 with open('operations.json', 'w') as f:
     json.dump(operations, f)
 
-simulate_mmu(operations,"MRU")
+simulate_mmu(operations,"RND")
 
 
