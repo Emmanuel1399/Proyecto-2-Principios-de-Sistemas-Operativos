@@ -2,7 +2,6 @@ from MMU import MMU
 import random
 import json
 
-
 def generate_operations(P, N):
     operations_list = []
     active_pointers = {}
@@ -47,7 +46,6 @@ def generate_operations(P, N):
 def simulate_mmu(operations_list, type_algorithm):
     mmu = MMU(type_algorithm)
     for op in operations_list:
-
         if op[0] == 'new':
             _, pid, size = op
             mmu.new(pid, size)
@@ -61,6 +59,16 @@ def simulate_mmu(operations_list, type_algorithm):
             _, pid = op
             mmu.kill(pid)
 
+def preprocess_references(operations):
+    future_references = {}
+    for index, op in enumerate(operations):
+        if op[0] == 'use':
+            pid = op[1]
+            if pid not in future_references:
+                future_references[pid] = []
+            future_references[pid].append(index)
+    return future_references
+
 P = 40   # Número de procesos
 N = 1000  # Número de operaciones
 operations = generate_operations(P, N)
@@ -68,6 +76,8 @@ operations = generate_operations(P, N)
 with open('operations.json', 'w') as f:
     json.dump(operations, f)
 
-simulate_mmu(operations,"RND")
+future_refs = preprocess_references(operations)
+mmu = MMU("OPT")
+mmu.set_future_references(future_refs)
 
-
+simulate_mmu(operations, "OPT")
