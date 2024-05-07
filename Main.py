@@ -1,41 +1,54 @@
 from MMU import MMU
 import random
 import json
-
-def generate_operations(P, N):
+def generate_operations(P, N, prob_news=0.5, prob_uses=0.3, prob_deletes=0.2, prob_kills=0.04):
     operations_list = []
     active_pointers = {}
     operations_count = {}
-    for _ in range(N):
-        op_type = random.choice(['new', 'use', 'delete', 'kill'])
+    kill_set = set()
+
+    for pid in range(1, P + 1):
+        operations_count[pid] = {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0}
+
+    # Probabilidades ajustadas para cada tipo de operación
+    probabilities = [('new', prob_news), ('use', prob_uses), ('delete', prob_deletes), ('kill', prob_kills)]
+
+    while len(operations_list) < N:
+        op_type = random.choices(
+            [op[0] for op in probabilities],
+            [op[1] for op in probabilities],
+            k=1
+        )[0]
         pid = random.randint(1, P)
 
-        if op_type == 'new' and (pid not in operations_count or operations_count[pid]['kills'] == 0):
-            size = random.randint(1, 400)
+        # Operación 'new'
+        if op_type == 'new' and pid not in kill_set:
+            size = random.randint(1, 4000)
             ptr_id = len(operations_list) + 1
             operations_list.append(('new', pid, size))
             active_pointers[ptr_id] = {'pid': pid, 'alive': True}
-            operations_count.setdefault(pid, {'news': 0, 'kills': 0, 'uses': 0, 'deletes': 0})
             operations_count[pid]['news'] += 1
 
-        elif op_type == 'use' and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
+        # Operación 'use'
+        elif op_type == 'use' and pid not in kill_set and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
             if operations_count[pid]['news'] > operations_count[pid]['uses']:
                 operations_list.append(('use', pid))
                 operations_count[pid]['uses'] += 1
 
-        elif op_type == 'delete' and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
+        # Operación 'delete'
+        elif op_type == 'delete' and pid not in kill_set and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
             if operations_count[pid]['news'] > operations_count[pid]['deletes']:
                 operations_list.append(('delete', pid))
                 operations_count[pid]['deletes'] += 1
-                # Mark the pointer as not alive
                 ptr_ids = [ptr_id for ptr_id, ptr in active_pointers.items() if ptr['pid'] == pid and ptr['alive']]
                 if ptr_ids:
                     active_pointers[ptr_ids[0]]['alive'] = False
 
-        elif op_type == 'kill' and pid in operations_count and operations_count[pid]['kills'] == 0:
+        # Operación 'kill'
+        elif op_type == 'kill' and pid not in kill_set:
             operations_list.append(('kill', pid))
-            operations_count[pid]['kills'] += 1
-            # Mark all pointers of this pid as not alive
+            kill_set.add(pid)
+            operations_count[pid]['kills'] = 1
             for ptr_id, ptr in active_pointers.items():
                 if ptr['pid'] == pid:
                     ptr['alive'] = False
@@ -59,6 +72,7 @@ def simulate_mmu(operations_list, type_algorithm):
             _, pid = op
             mmu.kill(pid)
 
+
 def preprocess_references(operations):
     future_references = {}
     for index, op in enumerate(operations):
@@ -69,15 +83,19 @@ def preprocess_references(operations):
             future_references[pid].append(index)
     return future_references
 
-P = 40   # Número de procesos
+P = 50   # Número de procesos
 N = 1000  # Número de operaciones
 operations = generate_operations(P, N)
+#operations = generate_operations(50, 1000, prob_news=0.5, prob_uses=0.3, prob_deletes=0.15, prob_kills=0.05)
 
-with open('operations.json', 'w') as f:
-    json.dump(operations, f)
+def save_operations_to_file(operations, filename="operations.txt"):
+    with open(filename, "w") as file:
+        for operation in operations:
+            file.write(f"{operation[0]}({', '.join(map(str, operation[1:]))})\n")
 
 future_refs = preprocess_references(operations)
 mmu = MMU("OPT")
 mmu.set_future_references(future_refs)
 
-simulate_mmu(operations, "OPT")
+simulate_mmu(operations, "FIFO")
+

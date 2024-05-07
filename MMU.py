@@ -15,6 +15,8 @@ class MMU:
         self.algorithm = algorithm
         self.time_process = 0
         self.future_references = {}
+        self.count_page_faults = 0
+        self.counte_page_hits = 0
 
     def new(self, pid, size):
         num_pages = (size + self.page_size - 1) // self.page_size
@@ -31,18 +33,14 @@ class MMU:
         elif self.algorithm == "OPT":
             self.opt(num_pages, new_ptr)
 
+
     def calc_ram_used(self):
-        for i in range(len(self.map_memory)):
-            ptr_list = self.map_memory[i].page_list
-            for j in range(len(ptr_list)):
-                page = ptr_list[j]
-                if page.virtual_memory:
-                    self.virtual_used += self.page_size
-                else:
-                    self.ram_used += self.page_size
+        self.ram_used = 4 * len(self.ram_memory)
+        self.virtual_used = 4 * len(self.virtual_memory)
 
     def fifo(self, new_pages, ptr):
         for i in range(new_pages):
+            self.calc_ram_used()
             page_waste = 0
             if i == new_pages - 1:
                 page_size = ptr.size % self.page_size
@@ -57,6 +55,7 @@ class MMU:
                 self.time_process += 1
             else:
                 # Handle page fault if needed
+                self.count_page_faults += 1
                 self.fifo_page_fault(ptr, page_waste)
         self.map_memory.append(ptr)
 
@@ -89,6 +88,9 @@ class MMU:
             for page in pointer.page_list:  # Revisar cada página en el puntero
                 if page.in_virtual_memory:  # Si la página está en memoria virtual
                     self.handle_page_fault(page)  # Manejar el fallo de página
+                else:
+
+                    self.time_process += 1
 
     def delete(self, ptr):
         if ptr in self.map_memory:
@@ -115,13 +117,15 @@ class MMU:
                     if page.in_virtual_memory:
                         # Si la página está en la memoria virtual, removerla
                         self.virtual_memory.remove(page)
+                        self.time_process += 5
                     else:
                         # Si la página está en RAM, también removerla
                         self.ram_memory.remove(page)
+                        self.time_process += 1
+
                     self.waste -= page.waste  # Restar el desperdicio asociado a cada página
 
                 # Llamar al método Kill del objeto Pointer
-
                 pointer.Kill()
                 # Error al hacer los kills, tengo que arreglar esta parte
 
