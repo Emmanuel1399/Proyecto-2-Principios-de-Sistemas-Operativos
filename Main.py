@@ -1,7 +1,9 @@
 from MMU import MMU
 import random
 import json
-def generate_operations(P, N, prob_news=0.5, prob_uses=0.3, prob_deletes=0.2, prob_kills=0.04):
+
+
+def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.2, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
     operations_count = {}
@@ -23,20 +25,22 @@ def generate_operations(P, N, prob_news=0.5, prob_uses=0.3, prob_deletes=0.2, pr
 
         # Operación 'new'
         if op_type == 'new' and pid not in kill_set:
-            size = random.randint(1, 4000)
+            size = random.randint(1, 400)
             ptr_id = len(operations_list) + 1
             operations_list.append(('new', pid, size))
             active_pointers[ptr_id] = {'pid': pid, 'alive': True}
             operations_count[pid]['news'] += 1
 
         # Operación 'use'
-        elif op_type == 'use' and pid not in kill_set and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
+        elif op_type == 'use' and pid not in kill_set and any(
+                ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
             if operations_count[pid]['news'] > operations_count[pid]['uses']:
                 operations_list.append(('use', pid))
                 operations_count[pid]['uses'] += 1
 
         # Operación 'delete'
-        elif op_type == 'delete' and pid not in kill_set and any(ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
+        elif op_type == 'delete' and pid not in kill_set and any(
+                ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
             if operations_count[pid]['news'] > operations_count[pid]['deletes']:
                 operations_list.append(('delete', pid))
                 operations_count[pid]['deletes'] += 1
@@ -71,21 +75,35 @@ def simulate_mmu(operations_list, type_algorithm):
         elif op[0] == 'kill':
             _, pid = op
             mmu.kill(pid)
+    print(mmu.count_page_hits)
+    print(mmu.count_page_faults)
 
 
 def preprocess_references(operations):
+    """Genera un mapa de futuras referencias para cada proceso"""
     future_references = {}
+
+    # Procesar cada operación
     for index, op in enumerate(operations):
         if op[0] == 'use':
-            pid = op[1]
+            pid = op[1]  # Identificador de proceso
+
+            # Inicializar el diccionario si es la primera vez
             if pid not in future_references:
                 future_references[pid] = []
+
+            # Añadir el índice de uso para este proceso
             future_references[pid].append(index)
+
+    # Almacenar el resultado en el objeto
     return future_references
 
-P = 50   # Número de procesos
-N = 1000  # Número de operaciones
+
+P = 10  # Número de procesos
+N = 500  # Número de operaciones
 operations = generate_operations(P, N)
+
+
 #operations = generate_operations(50, 1000, prob_news=0.5, prob_uses=0.3, prob_deletes=0.15, prob_kills=0.05)
 
 def save_operations_to_file(operations, filename="operations.txt"):
@@ -93,9 +111,11 @@ def save_operations_to_file(operations, filename="operations.txt"):
         for operation in operations:
             file.write(f"{operation[0]}({', '.join(map(str, operation[1:]))})\n")
 
+
 future_refs = preprocess_references(operations)
 mmu = MMU("OPT")
 mmu.set_future_references(future_refs)
 
-simulate_mmu(operations, "FIFO")
-
+save_operations_to_file(operations)
+simulate_mmu(operations, "OPT")
+simulate_mmu(operations, "SC")
