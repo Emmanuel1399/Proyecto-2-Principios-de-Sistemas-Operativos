@@ -14,6 +14,7 @@ class MMU:
         self.virtual_used = 0
         self.algorithm = algorithm
         self.time_process = 0
+        self.count_process = 0
         self.future_references = {}
         self.count_page_faults = 0
         self.count_page_hits = 0
@@ -40,7 +41,7 @@ class MMU:
 
     def fifo(self, new_pages, ptr):
         for i in range(new_pages):
-            self.calc_ram_used()
+
             page_waste = 0
             if i == new_pages - 1:
                 page_size = ptr.size % self.page_size
@@ -58,6 +59,7 @@ class MMU:
                 # Handle page fault if needed
                 self.count_page_faults += 1
                 self.fifo_page_fault(ptr, page_waste)
+        self.calc_ram_used()
         self.map_memory.append(ptr)
 
 
@@ -187,26 +189,19 @@ class MMU:
             del self.map_memory[ptr]  # Eliminar el puntero del mapa de memoria
 
     def kill(self, pid):
-        # Verificar si el pid existe en el mapa de memoria
-        for ptr in self.map_memory:
-            if ptr.pid == pid:
-                pointer = ptr  # Obtener el puntero asociado al pid
-                # Eliminar todas las páginas asociadas al puntero tanto en RAM como en memoria virtual
-                for page in pointer.page_list:
-                    if page.in_virtual_memory:
-                        # Si la página está en la memoria virtual, removerla
-                        self.virtual_memory.remove(page)
-                        self.time_process += 5
-                    else:
-                        # Si la página está en RAM, también removerla
-                        self.ram_memory.remove(page)
-                        self.time_process += 1
+        pointer_to_remove = [ptr for ptr in self.map_memory if ptr.pid == pid]
+        if pointer_to_remove:
+            pointer = pointer_to_remove[0]
+            # Eliminar todas las páginas asociadas al puntero
+            for page in pointer.page_list:
+                if page.in_virtual_memory:
+                    self.virtual_memory.remove(page)
+                else:
+                    self.ram_memory.remove(page)
+                self.waste -= page.waste
+            # Marcar el puntero como eliminado y quitarlo del mapa
+            pointer.Kill()
 
-                    self.waste -= page.waste  # Restar el desperdicio asociado a cada página
-
-                # Llamar al método Kill del objeto Pointer
-                pointer.Kill()
-                # Error al hacer los kills, tengo que arreglar esta parte
 
     def mru(self, new_pages, ptr):
         for i in range(new_pages):
@@ -228,6 +223,7 @@ class MMU:
                 self.count_page_faults += 1
                 self.mru_page_fault(ptr)
                 self.map_memory.append(ptr)
+        self.calc_ram_used()
 
     def mru_page_fault(self, ptr):
         most_recently_used_page = max(self.ram_memory, key=lambda x: x.last_used)
@@ -250,12 +246,13 @@ class MMU:
                 new_page = Page(len(self.ram_memory), 0)
                 new_page.time_in_ram += 1
                 self.ram_memory.append(new_page)
+                ptr.page_list.append(new_page)
                 self.time_process += 1
                 self.count_page_hits += 1
-                ptr.page_list.append(new_page)
             else:
                 self.count_page_faults += 1
                 self.handle_second_chance()
+        self.calc_ram_used()
 
     def handle_second_chance(self):
         i = 0
@@ -287,7 +284,7 @@ class MMU:
             else:
                 self.count_page_faults += 1
                 self.rnd_page_fault(ptr)
-
+        self.calc_ram_used()
         self.map_memory.append(ptr)
 
     def rnd_page_fault(self, ptr):
@@ -325,35 +322,31 @@ class MMU:
             else:
                 self.count_page_faults += 1
                 self.opt_page_fault(ptr)
+        self.calc_ram_used()
 
     def opt_page_fault(self, pointer):
-        """Busca y reemplaza la página que no se necesitará por el mayor tiempo"""
+        """Reemplazo basado en el algoritmo óptimo, identificando el puntero que está más alejado."""
         page_to_remove = None
         longest_future_use = -1
 
-        # Buscar entre las páginas asociadas al puntero dado
+        # Recorrer las páginas asociadas al puntero actual
         for page in pointer.page_list:
-            if page.in_virtual_memory:
-                continue  # Ignora páginas ya en memoria virtual
+            # Inicializar la variable para la próxima referencia de esta página
+            next_use = float("inf")
 
+            # Obtener el Process ID del puntero y verificar las futuras referencias para este proceso
             pid = pointer.pid
-            page_id = page.id
 
-            # Verificar si hay futuras referencias para esta página
-            if pid not in self.future_references or page_id not in self.future_references[pid]:
-                longest_future_use = float('inf')
-                page_to_remove = page
-                break
+            if pid in self.future_references:
+                future_references = self.future_references[pid]
 
-            # Obtener la próxima referencia
-            next_use_list = self.future_references[pid][page_id]
-            if not next_use_list:
-                longest_future_use = float('inf')
-                page_to_remove = page
-                break
+                # Buscar el índice de la próxima operación 'use' en la lista de futuras referencias
+                for index in future_references:
+                    if index > self.time_process:
+                        next_use = index
+                        break
 
-            next_use = next_use_list[0]
-
+            # Si esta página tiene la referencia más lejana, seleccionarla como candidata a eliminar
             if next_use > longest_future_use:
                 longest_future_use = next_use
                 page_to_remove = page
@@ -367,6 +360,7 @@ class MMU:
         # Añadir la nueva página solicitada a la RAM
         page_waste = pointer.page_list[-1].waste if pointer.page_list else 0
         new_page = Page(len(self.virtual_memory), page_waste)
+        new_page.in_virtual_memory = False
         self.ram_memory.append(new_page)
         pointer.page_list.append(new_page)
         self.time_process += 5

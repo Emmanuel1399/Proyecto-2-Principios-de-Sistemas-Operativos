@@ -3,7 +3,7 @@ import random
 import json
 
 
-def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.2, prob_kills=0.01):
+def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.19, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
     operations_count = {}
@@ -94,7 +94,7 @@ def preprocess_references(operations):
 
             # Añadir el índice de uso para este proceso
             future_references[pid].append(index)
-
+    print(future_references)
     # Almacenar el resultado en el objeto
     return future_references
 
