@@ -18,9 +18,8 @@ def fifo(mmu, new_pages, ptr):
             mmu.count_page_hits += 1
         else:
             mmu.count_page_faults += 1
+            mmu.time_process += 5
             fifo_page_fault(mmu, ptr, page_waste)
-
-    mmu.map_memory.append(ptr)
 
 
 def fifo_page_fault(mmu, pointer, waste):
@@ -31,4 +30,14 @@ def fifo_page_fault(mmu, pointer, waste):
     mmu.virtual_memory.append(evicted_page)
     mmu.ram_memory.append(new_page)
     pointer.page_list.append(new_page)
-    mmu.time_process += 5
+
+
+
+def use_fifo_page_fault(self, page):
+    """Reemplazo basado en el algoritmo FIFO."""
+    evicted_page = self.ram_memory.pop(0)  # FIFO
+    evicted_page.in_virtual_memory = True
+    self.virtual_memory.append(evicted_page)
+    page.in_virtual_memory = False
+    self.ram_memory.append(page)
+

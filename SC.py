@@ -14,12 +14,10 @@ def second_chance(mmu, new_pages, ptr):
             mmu.ram_memory.append(new_page)
             ptr.page_list.append(new_page)
             mmu.time_process += 1
-            mmu.count_page_hits += 1
         else:
             mmu.count_page_faults += 1
+            mmu.time_process += 5
             second_chance_page_fault(mmu)
-
-    mmu.map_memory.append(ptr)
 
 
 def second_chance_page_fault(mmu):
@@ -30,8 +28,26 @@ def second_chance_page_fault(mmu):
             evicted_page = mmu.ram_memory.pop(i)
             evicted_page.in_virtual_memory = True
             mmu.virtual_memory.append(evicted_page)
-            mmu.time_process += 5
             break
         else:
+            current_page.second_chance = False
+            i = (i + 1) % len(mmu.ram_memory)
+
+
+def use_second_chance_page_fault(mmu, page):
+    """Reemplazo basado en el algoritmo Second Chance."""
+    i = 0
+    while True:
+        current_page = mmu.ram_memory[i]
+        if not current_page.second_chance:
+            # Reemplazar la página que no tiene segunda oportunidad
+            evicted_page = mmu.ram_memory.pop(i)
+            evicted_page.in_virtual_memory = True
+            mmu.virtual_memory.append(evicted_page)
+            page.in_virtual_memory = False
+            mmu.ram_memory.append(page)
+            break
+        else:
+            # Si tiene segunda oportunidad, marcarla y seguir
             current_page.second_chance = False
             i = (i + 1) % len(mmu.ram_memory)

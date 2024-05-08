@@ -1,18 +1,20 @@
-from MMU import MMU
 import random
-import json
+
+from MMU import MMU
 
 
-def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.19, prob_kills=0.01):
+
+# Función para generar un archivo con instrucciones
+# Function to generate a file with instructions
+def generate_operations(P, N, output_file='simulated_operations.txt',
+                        prob_news=0.5, prob_uses=0.3, prob_deletes=0.19, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
-    operations_count = {}
+    operations_count = {pid: {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0} for pid in range(1, P + 1)}
     kill_set = set()
+    global_ptr = 1
 
-    for pid in range(1, P + 1):
-        operations_count[pid] = {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0}
-
-    # Probabilidades ajustadas para cada tipo de operación
+    # Adjusted probabilities for each operation type
     probabilities = [('new', prob_news), ('use', prob_uses), ('delete', prob_deletes), ('kill', prob_kills)]
 
     while len(operations_list) < N:
@@ -23,32 +25,33 @@ def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.19, 
         )[0]
         pid = random.randint(1, P)
 
-        # Operación 'new'
+        # Operation 'new'
         if op_type == 'new' and pid not in kill_set:
-            size = random.randint(1, 400)
-            ptr_id = len(operations_list) + 1
+            size = random.randint(10, 5000)  # Random size between 100B and 5000B
             operations_list.append(('new', pid, size))
-            active_pointers[ptr_id] = {'pid': pid, 'alive': True}
+            active_pointers[global_ptr] = {'pid': pid, 'alive': True}
             operations_count[pid]['news'] += 1
+            global_ptr += 1
 
-        # Operación 'use'
-        elif op_type == 'use' and pid not in kill_set and any(
-                ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
-            if operations_count[pid]['news'] > operations_count[pid]['uses']:
-                operations_list.append(('use', pid))
+        # Operation 'use'
+        elif op_type == 'use' and pid not in kill_set:
+            # Get live pointers for this process
+            valid_ptrs = [ptr_id for ptr_id, ptr in active_pointers.items() if ptr['pid'] == pid and ptr['alive']]
+            if valid_ptrs:
+                ptr_id = random.choice(valid_ptrs)
+                operations_list.append(('use', ptr_id))
                 operations_count[pid]['uses'] += 1
 
-        # Operación 'delete'
-        elif op_type == 'delete' and pid not in kill_set and any(
-                ptr['alive'] for ptr in active_pointers.values() if ptr['pid'] == pid):
-            if operations_count[pid]['news'] > operations_count[pid]['deletes']:
-                operations_list.append(('delete', pid))
+        # Operation 'delete'
+        elif op_type == 'delete' and pid not in kill_set:
+            valid_ptrs = [ptr_id for ptr_id, ptr in active_pointers.items() if ptr['pid'] == pid and ptr['alive']]
+            if valid_ptrs:
+                ptr_id = valid_ptrs[0]
+                operations_list.append(('delete', ptr_id))
                 operations_count[pid]['deletes'] += 1
-                ptr_ids = [ptr_id for ptr_id, ptr in active_pointers.items() if ptr['pid'] == pid and ptr['alive']]
-                if ptr_ids:
-                    active_pointers[ptr_ids[0]]['alive'] = False
+                active_pointers[ptr_id]['alive'] = False
 
-        # Operación 'kill'
+        # Operation 'kill'
         elif op_type == 'kill' and pid not in kill_set:
             operations_list.append(('kill', pid))
             kill_set.add(pid)
@@ -57,8 +60,20 @@ def generate_operations(P, N, prob_news=0.5, prob_uses=0.30, prob_deletes=0.19, 
                 if ptr['pid'] == pid:
                     ptr['alive'] = False
 
-    return operations_list
+    # Write the instructions to a file
+    with open(output_file, 'w') as file:
+        for op in operations_list:
+            if op[0] == 'new':
+                file.write(f'new({op[1]},{op[2]})\n')
+            elif op[0] == 'use':
+                file.write(f'use({op[1]})\n')
+            elif op[0] == 'delete':
+                file.write(f'delete({op[1]})\n')
+            elif op[0] == 'kill':
+                file.write(f'kill({op[1]})\n')
 
+    return operations_list
+# Generar un ejemplo
 
 def simulate_mmu(operations_list, type_algorithm):
     mmu = MMU(type_algorithm)
@@ -77,6 +92,7 @@ def simulate_mmu(operations_list, type_algorithm):
             mmu.kill(pid)
     print(mmu.count_page_hits)
     print(mmu.count_page_faults)
+
 
 
 def preprocess_references(operations):
@@ -106,16 +122,11 @@ operations = generate_operations(P, N)
 
 #operations = generate_operations(50, 1000, prob_news=0.5, prob_uses=0.3, prob_deletes=0.15, prob_kills=0.05)
 
-def save_operations_to_file(operations, filename="operations.txt"):
-    with open(filename, "w") as file:
-        for operation in operations:
-            file.write(f"{operation[0]}({', '.join(map(str, operation[1:]))})\n")
 
 
 future_refs = preprocess_references(operations)
 mmu = MMU("OPT")
 mmu.set_future_references(future_refs)
 
-save_operations_to_file(operations)
-simulate_mmu(operations, "OPT")
-simulate_mmu(operations, "RND")
+#simulate_mmu(operations, "OPT")
+simulate_mmu(operations, "SC")

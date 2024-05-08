@@ -19,9 +19,10 @@ def mru(mmu, new_pages, ptr):
             mmu.count_page_hits += 1
         else:
             mmu.count_page_faults += 1
+            mmu.time_process += 5
             mru_page_fault(mmu, ptr)
 
-    mmu.map_memory.append(ptr)
+
 
 
 def mru_page_fault(mmu, ptr):
@@ -35,4 +36,14 @@ def mru_page_fault(mmu, ptr):
     new_page.last_used = mmu.time_process
     mmu.ram_memory.append(new_page)
     ptr.page_list.append(new_page)
-    mmu.time_process += 5
+
+
+def use_mru_page_fault(self, page):
+    """Reemplazo basado en el algoritmo MRU."""
+    most_recently_used_page = max(self.ram_memory, key=lambda x: x.last_used)
+    self.ram_memory.remove(most_recently_used_page)
+    most_recently_used_page.in_virtual_memory = True
+    self.virtual_memory.append(most_recently_used_page)
+    page.in_virtual_memory = False
+    self.ram_memory.append(page)
+

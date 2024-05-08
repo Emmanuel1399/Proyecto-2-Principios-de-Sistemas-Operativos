@@ -19,9 +19,10 @@ def rnd(mmu, new_pages, ptr):
             mmu.count_page_hits += 1
         else:
             mmu.count_page_faults += 1
+            mmu.time_process += 5
             rnd_page_fault(mmu, ptr)
 
-    mmu.map_memory.append(ptr)
+
 
 
 def rnd_page_fault(mmu, ptr):
@@ -34,4 +35,4 @@ def rnd_page_fault(mmu, ptr):
     new_page = Page(len(mmu.virtual_memory), page_waste, ptr.index)
     mmu.ram_memory.append(new_page)
     ptr.page_list.append(new_page)
-    mmu.time_process += 5
+

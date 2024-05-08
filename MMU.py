@@ -1,9 +1,9 @@
 from Pointer import Pointer
 from Page import Page
-from FIFO import fifo, fifo_page_fault
-from SC import second_chance, second_chance_page_fault
-from MRU import mru, mru_page_fault
-from RND import rnd, rnd_page_fault
+from FIFO import *
+from SC import *
+from MRU import *
+from RND import *
 
 class MMU:
     def __init__(self, algorithm):
@@ -29,6 +29,7 @@ class MMU:
         new_ptr = Pointer(pid, size, ptr_index)
         self.count_process += 1
         self.map_memory.append(new_ptr)
+        self.count_page_faults += num_pages
         if self.algorithm == "FIFO":
             fifo(self, num_pages, new_ptr)
         elif self.algorithm == "SC":
@@ -39,20 +40,22 @@ class MMU:
             rnd(self, num_pages, new_ptr)
 
     def use(self, ptr):
-        if ptr in self.map_memory:
-            pointer = self.map_memory[ptr]
-            if pointer.kill:
-                print("PTR already killed")
-                return
-            for page in pointer.page_list:
-                if page.in_virtual_memory:
-                    self.handle_page_fault(page, pointer)
-                    self.count_page_faults += 1
-                else:
-                    self.count_page_hits += 1
-                    self.time_process += 1
+        self.count_process += 1
+        pointer = self.map_memory[ptr-1]
+        if pointer.kill:
+            print("PTR already killed")
+            return
+        for page in pointer.page_list:
+            if page.in_virtual_memory:
+                self.handle_page_fault(page, pointer)
+                self.count_page_faults += 1
+                self.time_process += 5
+            else:
+                self.count_page_hits += 1
+                self.time_process += 1
 
     def delete(self, ptr):
+        self.count_process += 1
         if ptr in self.map_memory:
             pointer = self.map_memory[ptr]
             waste_removed = pointer.delete()  # Llamada al método delete del objeto Pointer
@@ -67,6 +70,7 @@ class MMU:
 
             del self.map_memory[ptr]  # Eliminar el puntero del mapa de memoria
     def kill(self, pid):
+        self.count_process += 1
         pointer_to_remove = [ptr for ptr in self.map_memory if ptr.pid == pid]
         if pointer_to_remove:
             pointer = pointer_to_remove[0]
@@ -80,16 +84,22 @@ class MMU:
             # Marcar el puntero como eliminado y quitarlo del mapa
             pointer.Kill()
     def handle_page_fault(self, page, pointer):
+        self.count_process += 1
+        self.time_process += 5
         if self.algorithm == "FIFO":
-            fifo_page_fault(self, page)
+            use_fifo_page_fault(self, page)
         elif self.algorithm == "MRU":
-            mru_page_fault(self, page)
+            use_mru_page_fault(self, page)
         elif self.algorithm == "SC":
-            second_chance_page_fault(self, page)
+            use_second_chance_page_fault(self, page)
         elif self.algorithm == "RND":
             rnd_page_fault(self, pointer)
     #    elif self.algorithm == "OPT":
           #  opt_page_fault(self, page)
+
+    def calc_ram_used(self):
+        self.ram_used = 4 * len(self.ram_memory)
+        self.virtual_used = 4 * len(self.virtual_memory)
 
     def set_future_references(self, references):
         """Preprocesa la secuencia de referencias futuras."""
