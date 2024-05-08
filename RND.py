@@ -1,5 +1,5 @@
 from Page import Page
-import random
+
 
 import random
 
@@ -25,12 +25,13 @@ def rnd_page_fault(mmu, pointer):
 # Function to allocate new pages using the Random page replacement algorithm
 def rnd(mmu, num_pages, ptr):
     for i in range(num_pages):
+        page_waste = 0
         if i == num_pages - 1:
             page_size = ptr.size % mmu.page_size
             page_waste = mmu.page_size - page_size if page_size != 0 else 0
             mmu.waste += page_waste
         if len(mmu.ram_memory) < mmu.total_pages:
-            new_page = Page(id=len(mmu.ram_memory) + 1, waste=0, ptr_index=pointer.index)
+            new_page = Page(len(mmu.ram_memory), page_waste, ptr.index)
             ptr.page_list.append(new_page)
             mmu.ram_memory.append(new_page)
         else:
