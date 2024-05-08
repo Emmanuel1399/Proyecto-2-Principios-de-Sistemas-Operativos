@@ -93,7 +93,7 @@ class MMU:
         elif self.algorithm == "SC":
             use_second_chance_page_fault(self, page)
         elif self.algorithm == "RND":
-            rnd_page_fault(self, pointer)
+            use_rnd_page_fault(self, page)
     #    elif self.algorithm == "OPT":
           #  opt_page_fault(self, page)
 

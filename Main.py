@@ -27,7 +27,7 @@ def generate_operations(P, N, output_file='simulated_operations.txt',
 
         # Operation 'new'
         if op_type == 'new' and pid not in kill_set:
-            size = random.randint(10, 5000)  # Random size between 100B and 5000B
+            size = random.randint(10, 600)  # Random size between 100B and 5000B
             operations_list.append(('new', pid, size))
             active_pointers[global_ptr] = {'pid': pid, 'alive': True}
             operations_count[pid]['news'] += 1
@@ -129,4 +129,4 @@ mmu = MMU("OPT")
 mmu.set_future_references(future_refs)
 
 #simulate_mmu(operations, "OPT")
-simulate_mmu(operations, "SC")
+simulate_mmu(operations, "RND")
