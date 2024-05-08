@@ -13,7 +13,7 @@ Este proyecto implementa una simulación de una **Memory Management Unit (MMU)**
 - Linux Fedora 33+ o una versión similar
 
 
-##Ejecutar un Archivo Python:
+## Ejecutar un Archivo Python:
 Navega hasta el directorio donde se encuentra tu archivo Main.py.
 Ejecuta el archivo con el siguiente comando:
 `python3 Main.py`
