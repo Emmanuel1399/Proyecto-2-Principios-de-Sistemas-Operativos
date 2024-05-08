@@ -51,9 +51,13 @@ def opt(mmu, num_pages, ptr):
 
             ptr.page_list.append(new_page)
             mmu.ram_memory.append(new_page)
+            mmu.count_page_hits += 1
+            mmu.time_process += 1
         else:
             # Maneja el fallo de página con el algoritmo óptimo
             opt_page_fault(mmu, new_page, ptr)
+            mmu.count_page_faults += 1
+            mmu.time_process += 5
 
 def use_opt_page_fault(mmu, page):
     """

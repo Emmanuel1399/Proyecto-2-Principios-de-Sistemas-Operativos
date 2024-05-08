@@ -34,9 +34,13 @@ def rnd(mmu, num_pages, ptr):
             new_page = Page(len(mmu.ram_memory), page_waste, ptr.index)
             ptr.page_list.append(new_page)
             mmu.ram_memory.append(new_page)
+            mmu.count_page_hits += 1
+            mmu.time_process += 1
         else:
             # If RAM is full, handle the page fault with rnd_page_fault
             rnd_page_fault(mmu, ptr)
+            mmu.count_page_faults += 1
+            mmu.time_process += 5
 
 def use_rnd_page_fault(mmu, page):
     """

@@ -29,6 +29,7 @@ class MMU:
         ptr_index = len(self.map_memory) + 1
         new_ptr = Pointer(pid, size, ptr_index)
         self.count_process += 1
+
         self.map_memory.append(new_ptr)
         self.count_page_faults += num_pages
         if self.algorithm == "FIFO":

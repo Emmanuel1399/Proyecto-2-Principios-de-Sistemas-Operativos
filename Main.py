@@ -6,7 +6,7 @@ from MMU import MMU
 # Función para generar un archivo con instrucciones
 # Function to generate a file with instructions
 def generate_operations(P, N, output_file='simulated_operations.txt',
-                        prob_news=0.49, prob_uses=0.3, prob_deletes=0.20, prob_kills=0.01):
+                        prob_news=0.40, prob_uses=0.28, prob_deletes=0.30, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
     operations_count = {pid: {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0} for pid in range(1, P + 1)}
@@ -26,7 +26,7 @@ def generate_operations(P, N, output_file='simulated_operations.txt',
 
         # Operation 'new'
         if op_type == 'new' and pid not in kill_set:
-            size = random.randint(10, 5000)  # Random size between 10B and 500B
+            size = random.randint(10, 700)  # Random size between 10B and 500B
             operations_list.append(('new', pid, size))
             active_pointers[global_ptr] = {'pid': pid, 'alive': True}
             operations_count[pid]['news'] += 1
@@ -148,11 +148,11 @@ def build_future_references(filename):
     return future_references
 
 
-P = 50  # Número de procesos
-N = 1000  # Número de operaciones
+P = 10  # Número de procesos
+N = 500  # Número de operaciones
 operations = generate_operations(P, N)
 
 #operations = generate_operations(50, 1000, prob_news=0.5, prob_uses=0.3, prob_deletes=0.15, prob_kills=0.05)
 
 simulate_mmu(operations, "OPT")
-simulate_mmu(operations, "RND")
+simulate_mmu(operations, "SC")
