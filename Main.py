@@ -3,11 +3,10 @@ import random
 from MMU import MMU
 
 
-
 # Función para generar un archivo con instrucciones
 # Function to generate a file with instructions
 def generate_operations(P, N, output_file='simulated_operations.txt',
-                        prob_news=0.5, prob_uses=0.3, prob_deletes=0.19, prob_kills=0.01):
+                        prob_news=0.49, prob_uses=0.3, prob_deletes=0.20, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
     operations_count = {pid: {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0} for pid in range(1, P + 1)}
@@ -27,7 +26,7 @@ def generate_operations(P, N, output_file='simulated_operations.txt',
 
         # Operation 'new'
         if op_type == 'new' and pid not in kill_set:
-            size = random.randint(10, 600)  # Random size between 100B and 5000B
+            size = random.randint(10, 500)  # Random size between 10B and 500B
             operations_list.append(('new', pid, size))
             active_pointers[global_ptr] = {'pid': pid, 'alive': True}
             operations_count[pid]['news'] += 1
@@ -73,11 +72,16 @@ def generate_operations(P, N, output_file='simulated_operations.txt',
                 file.write(f'kill({op[1]})\n')
 
     return operations_list
+
+
 # Generar un ejemplo
 
-def simulate_mmu(operations_list, type_algorithm):
+def simulate_mmu(operations_list, type_algorithm, ):
+    future_reference = build_future_references("simulated_operations.txt")
     mmu = MMU(type_algorithm)
+    mmu.set_future_references(future_reference)
     for op in operations_list:
+        mmu.calc_ram_used()
         if op[0] == 'new':
             _, pid, size = op
             mmu.new(pid, size)
@@ -94,39 +98,61 @@ def simulate_mmu(operations_list, type_algorithm):
     print(mmu.count_page_faults)
 
 
-
-def preprocess_references(operations):
-    """Genera un mapa de futuras referencias para cada proceso"""
+def build_future_references(filename):
+    """
+    Build a dictionary of future references for each pointer index based on the instructions from a file.
+    """
     future_references = {}
+    ptr_page_usage = {}
 
-    # Procesar cada operación
-    for index, op in enumerate(operations):
-        if op[0] == 'use':
-            pid = op[1]  # Identificador de proceso
+    # Leer todas las instrucciones del archivo
+    with open(filename, 'r') as file:
+        instructions = file.readlines()
 
-            # Inicializar el diccionario si es la primera vez
-            if pid not in future_references:
-                future_references[pid] = []
+    # Procesar en orden inverso para identificar próximas referencias
+    reversed_instructions = list(reversed(instructions))
 
-            # Añadir el índice de uso para este proceso
-            future_references[pid].append(index)
-    print(future_references)
-    # Almacenar el resultado en el objeto
+    for idx, instruction in enumerate(reversed_instructions):
+        # Separar y analizar el tipo de instrucción
+        parts = instruction.strip('()\n').split(',')
+        command = parts[0]
+
+        # Manejar la instrucción `new` mapeando un puntero a un conjunto de páginas
+        if command == 'new':
+            pid = int(parts[1])
+            ptr_index = len(ptr_page_usage) + 1
+            size = int(parts[2])
+            num_pages = (size + 4 - 1) // 4
+
+            # Crear una lista de IDs de páginas para el nuevo puntero
+            ptr_page_usage[ptr_index] = [ptr_index * 100 + i for i in range(num_pages)]
+
+        # Rastrear el uso de páginas en `use`
+        elif command == 'use':
+            ptr_index = int(parts[1])
+            if ptr_index not in future_references:
+                future_references[ptr_index] = []
+
+            if ptr_index in ptr_page_usage:
+                # Agregar las páginas asociadas al puntero en orden inverso
+                for page in ptr_page_usage[ptr_index]:
+                    if page not in future_references[ptr_index]:
+                        future_references[ptr_index].insert(0, page)
+
+        # Actualizar el uso de páginas en `delete` o `kill`
+        elif command in {'delete', 'kill'}:
+            ptr_index = int(parts[1])
+            if ptr_index in ptr_page_usage:
+                del ptr_page_usage[ptr_index]
+
     return future_references
 
 
-P = 10  # Número de procesos
-N = 500  # Número de operaciones
+P = 100  # Número de procesos
+N = 5000  # Número de operaciones
 operations = generate_operations(P, N)
-
 
 #operations = generate_operations(50, 1000, prob_news=0.5, prob_uses=0.3, prob_deletes=0.15, prob_kills=0.05)
 
-
-
-future_refs = preprocess_references(operations)
-mmu = MMU("OPT")
-mmu.set_future_references(future_refs)
-
-#simulate_mmu(operations, "OPT")
-simulate_mmu(operations, "RND")
+simulate_mmu(operations, "OPT")
+simulate_mmu(operations, "SC")

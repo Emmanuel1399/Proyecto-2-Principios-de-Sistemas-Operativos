@@ -23,15 +23,19 @@ def rnd_page_fault(mmu, pointer):
         mmu.ram_memory.append(new_page)
 
 # Function to allocate new pages using the Random page replacement algorithm
-def rnd(mmu, num_pages, pointer):
-    for _ in range(num_pages):
+def rnd(mmu, num_pages, ptr):
+    for i in range(num_pages):
+        if i == num_pages - 1:
+            page_size = ptr.size % mmu.page_size
+            page_waste = mmu.page_size - page_size if page_size != 0 else 0
+            mmu.waste += page_waste
         if len(mmu.ram_memory) < mmu.total_pages:
             new_page = Page(id=len(mmu.ram_memory) + 1, waste=0, ptr_index=pointer.index)
-            pointer.page_list.append(new_page)
+            ptr.page_list.append(new_page)
             mmu.ram_memory.append(new_page)
         else:
             # If RAM is full, handle the page fault with rnd_page_fault
-            rnd_page_fault(mmu, pointer)
+            rnd_page_fault(mmu, ptr)
 
 def use_rnd_page_fault(mmu, page):
     """

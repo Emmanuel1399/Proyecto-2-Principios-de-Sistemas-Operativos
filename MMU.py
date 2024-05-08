@@ -1,3 +1,4 @@
+from OPT import *
 from Pointer import Pointer
 from Page import Page
 from FIFO import *
@@ -7,20 +8,20 @@ from RND import *
 
 class MMU:
     def __init__(self, algorithm):
-        self.ram_memory = []
-        self.virtual_memory = []
-        self.map_memory = []
+        self.ram_memory = [] # Memoria real
+        self.virtual_memory = [] # Memoria en disco o virtual
+        self.map_memory = [] # Mapa de memoria de los punteros o tabla de simbolos
         self.page_size = 4
         self.total_pages = 100
-        self.waste = 0
-        self.ram_used = 0
-        self.virtual_used = 0
-        self.algorithm = algorithm
-        self.time_process = 0
-        self.count_process = 0
-        self.future_references = {}
-        self.count_page_faults = 0
-        self.count_page_hits = 0
+        self.waste = 0 # Gasto total de pagina
+        self.ram_used = 0 # Memoria ram usada
+        self.virtual_used = 0 # Memoria virtual usada
+        self.algorithm = algorithm #algoritmo seleccionado en la MMU
+        self.time_process = 0 # tiempo de procesos
+        self.count_process = 0 # numero de procesos ejecutados o indice del proceso
+        self.future_references = {} # Referencias para el algoritmo Optimo
+        self.count_page_faults = 0 # fallos de paginacion
+        self.count_page_hits = 0 # Paginas encontradas en memoria real
 
     def new(self, pid, size):
 
@@ -38,6 +39,8 @@ class MMU:
             mru(self, num_pages, new_ptr)
         elif self.algorithm == "RND":
             rnd(self, num_pages, new_ptr)
+        elif self.algorithm == "OPT":
+            opt(self, num_pages, new_ptr)
 
     def use(self, ptr):
         self.count_process += 1
@@ -47,12 +50,13 @@ class MMU:
             return
         for page in pointer.page_list:
             if page.in_virtual_memory:
-                self.handle_page_fault(page, pointer)
+                self.handle_page_fault(page)
                 self.count_page_faults += 1
                 self.time_process += 5
             else:
                 self.count_page_hits += 1
                 self.time_process += 1
+
 
     def delete(self, ptr):
         self.count_process += 1
@@ -83,7 +87,7 @@ class MMU:
                 self.waste -= page.waste
             # Marcar el puntero como eliminado y quitarlo del mapa
             pointer.Kill()
-    def handle_page_fault(self, page, pointer):
+    def handle_page_fault(self, page):
         self.count_process += 1
         self.time_process += 5
         if self.algorithm == "FIFO":
@@ -94,8 +98,8 @@ class MMU:
             use_second_chance_page_fault(self, page)
         elif self.algorithm == "RND":
             use_rnd_page_fault(self, page)
-    #    elif self.algorithm == "OPT":
-          #  opt_page_fault(self, page)
+        elif self.algorithm == "OPT":
+            use_opt_page_fault(self, page)
 
     def calc_ram_used(self):
         self.ram_used = 4 * len(self.ram_memory)

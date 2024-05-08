@@ -9,7 +9,7 @@ def second_chance(mmu, new_pages, ptr):
             page_waste = mmu.page_size - page_size if page_size != 0 else 0
             mmu.waste += page_waste
         if len(mmu.ram_memory) < mmu.total_pages:
-            new_page = Page(len(mmu.ram_memory), 0, ptr.index)
+            new_page = Page(len(mmu.ram_memory), page_waste, ptr.index)
             new_page.time_in_ram += 1
             mmu.ram_memory.append(new_page)
             ptr.page_list.append(new_page)
