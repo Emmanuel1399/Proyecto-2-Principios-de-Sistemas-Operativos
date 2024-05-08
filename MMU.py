@@ -53,7 +53,6 @@ class MMU:
             if page.in_virtual_memory:
                 self.handle_page_fault(page)
                 self.count_page_faults += 1
-                self.time_process += 5
             else:
                 self.count_page_hits += 1
                 self.time_process += 1
@@ -89,8 +88,7 @@ class MMU:
             # Marcar el puntero como eliminado y quitarlo del mapa
             pointer.Kill()
     def handle_page_fault(self, page):
-        self.count_process += 1
-        self.time_process += 5
+
         if self.algorithm == "FIFO":
             use_fifo_page_fault(self, page)
         elif self.algorithm == "MRU":

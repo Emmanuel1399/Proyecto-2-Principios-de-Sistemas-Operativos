@@ -6,7 +6,7 @@ from MMU import MMU
 # Función para generar un archivo con instrucciones
 # Function to generate a file with instructions
 def generate_operations(P, N, output_file='simulated_operations.txt',
-                        prob_news=0.40, prob_uses=0.28, prob_deletes=0.30, prob_kills=0.01):
+                        prob_news=0.40, prob_uses=0.35, prob_deletes=0.25, prob_kills=0.01):
     operations_list = []
     active_pointers = {}
     operations_count = {pid: {'news': 0, 'uses': 0, 'deletes': 0, 'kills': 0} for pid in range(1, P + 1)}
