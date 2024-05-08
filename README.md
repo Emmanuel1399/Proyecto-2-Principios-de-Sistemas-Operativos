@@ -11,6 +11,8 @@ Este proyecto implementa una simulación de una **Memory Management Unit (MMU)**
 - **Python 3.6+**
 - **PyCharm:** IDE recomendado para ejecutar el proyecto.
 - Linux Fedora 33+ o una versión similar
+
+
 ##Ejecutar un Archivo Python:
 Navega hasta el directorio donde se encuentra tu archivo Main.py.
 Ejecuta el archivo con el siguiente comando:
